@@ -1,6 +1,6 @@
 # 2025 Offseason Project - Updating Marvin 18
 
-The intention of this project is to update the codebase of our 2025 robot, Marvin 18, to function properly with Advantage Kit and also implement Maplesim. 
+The intention of this project is to update the codebase of our 2025 robot, Marvin 18, to function properly with Advantage Kit and also implement Maplesim.
 
 ## Goals
 
