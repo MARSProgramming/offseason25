@@ -1,134 +1,196 @@
-// Copyright (c) 2025 FRC 6328
+// Copyright 2021-2025 FRC 6328
 // http://github.com/Mechanical-Advantage
 //
-// Use of this source code is governed by an MIT-style
-// license that can be found in the LICENSE file at
-// the root directory of this project.
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// version 3 as published by the Free Software Foundation or
+// available in the root directory of this project.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
 
 package frc.robot.subsystems.elevator;
 
-import static frc.robot.util.PhoenixUtil.tryUntilOk;
+import static edu.wpi.first.units.Units.Radians;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
+import static frc.robot.util.PhoenixUtil.*;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
-import com.ctre.phoenix6.configs.Slot0Configs;
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.CoastOut;
+import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
+import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.TorqueCurrentFOC;
+import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
+import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
+import com.ctre.phoenix6.hardware.CANcoder;
+import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
+import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.signals.SensorDirectionValue;
+import com.ctre.phoenix6.swerve.SwerveModuleConstants;
+import edu.wpi.first.math.filter.Debouncer;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.Servo;
+import frc.robot.generated.TunerConstants;
+import frc.robot.subsystems.drive.ModuleIO.ModuleIOInputs;
 import frc.robot.util.PhoenixUtil;
 
+import java.util.Queue;
+
+/**
+ * Module IO implementation for Talon FX drive motor controller, Talon FX turn motor controller, and
+ * CANcoder. Configured using a set of module constants from Phoenix.
+ *
+ * <p>Device configuration and other behaviors not exposed by TunerConstants can be customized here.
+ */
 public class ElevatorIOTalonFX implements ElevatorIO {
-  protected static final double reduction = 36.0;
 
-  // Hardware
-  private final TalonFX talon;
+  // Hardware objects
+  private final TalonFX master;
+  private final TalonFX follower;
 
-  // Config
-  private final TalonFXConfiguration config = new TalonFXConfiguration();
+  // Voltage control requests
+  private final VoltageOut voltageRequest = new VoltageOut(0);
+  private final MotionMagicVoltage magicRequest = new MotionMagicVoltage(0);
+  private final CoastOut coastRequest = new CoastOut();
 
-  // Status Signals
-  private final StatusSignal<Angle> position;
-  private final StatusSignal<AngularVelocity> velocity;
-  private final StatusSignal<Voltage> appliedVolts;
-  private final StatusSignal<Current> torqueCurrent;
-  private final StatusSignal<Current> supplyCurrent;
-  private final StatusSignal<Temperature> temp;
 
-  private final TorqueCurrentFOC torqueCurrentRequest =
-      new TorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
-  private final PositionTorqueCurrentFOC positionTorqueCurrentRequest =
-      new PositionTorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
-  private final VoltageOut voltageRequest = new VoltageOut(0.0).withUpdateFreqHz(0.0);
+  // Timestamp inputs from Phoenix thread
+  // Inputs to log from elevator motors
+  private final StatusSignal<Angle> masterPosition;
+  private final StatusSignal<AngularVelocity> masterVelocity;
+  private final StatusSignal<Voltage> masterAppliedVolts;
+  private final StatusSignal<Current> masterSupplyCurrentAmps;
+  private final StatusSignal<Current> masterTorqueCurrentAmps;
+  private final StatusSignal<Temperature> masterTemp;
+
+  private final StatusSignal<Angle> followerPosition;
+  private final StatusSignal<AngularVelocity> followerVelocity;
+  private final StatusSignal<Voltage> followerAppliedVolts;
+  private final StatusSignal<Current> followerSupplyCurrentAmps;
+  private final StatusSignal<Current> followerTorqueCurrentAmps;
+  private final StatusSignal<Temperature> followerTemp;
 
   public ElevatorIOTalonFX() {
-    talon = new TalonFX(3, "rio");
+    master = new TalonFX(0);
+    follower = new TalonFX(0);
 
-    // Configure motor
-    config.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-    config.Slot0 = new Slot0Configs().withKP(0).withKI(0).withKD(0);
-    config.Feedback.SensorToMechanismRatio = reduction;
-    config.TorqueCurrent.PeakForwardTorqueCurrent = 120.0;
-    config.TorqueCurrent.PeakReverseTorqueCurrent = -120.0;
-    config.CurrentLimits.StatorCurrentLimit = 80.0;
-    config.CurrentLimits.StatorCurrentLimitEnable = true;
-    config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
-    tryUntilOk(5, () -> talon.getConfigurator().apply(config, 0.25));
+    var elevatorConfig = new TalonFXConfiguration();
+    elevatorConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+    elevatorConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+    elevatorConfig.SoftwareLimitSwitch.ForwardSoftLimitThreshold = 8;
+    elevatorConfig.SoftwareLimitSwitch.ReverseSoftLimitThreshold = 0;
+    elevatorConfig.SoftwareLimitSwitch.ReverseSoftLimitEnable = false; // TESTING ONLY
+    elevatorConfig.SoftwareLimitSwitch.ForwardSoftLimitEnable = false; // TESTING ONLY
+    // masterConfig.SoftwareLimitSwitch.ReverseSoftLimitThreshold = 0.0;
+    elevatorConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+    elevatorConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
+    elevatorConfig.CurrentLimits.SupplyCurrentLimit = 54;
+    elevatorConfig.CurrentLimits.SupplyCurrentLowerLimit = 30;
+    elevatorConfig.CurrentLimits.SupplyCurrentLowerTime = 1;
 
-    position = talon.getPosition();
-    velocity = talon.getVelocity();
-    appliedVolts = talon.getMotorVoltage();
-    torqueCurrent = talon.getTorqueCurrent();
-    supplyCurrent = talon.getSupplyCurrent();
-    temp = talon.getDeviceTemp();
+    elevatorConfig.CurrentLimits.StatorCurrentLimit = 120;
+    elevatorConfig.Feedback.SensorToMechanismRatio = 12;
+    elevatorConfig.Voltage.PeakForwardVoltage = 16;
+    elevatorConfig.Voltage.PeakReverseVoltage = -16;
+
+    elevatorConfig.Slot0.kP = 18;
+    elevatorConfig.Slot0.kI = 2;
+    elevatorConfig.Slot0.kD = 2;
+    elevatorConfig.Slot0.kG = 0.3;
+    elevatorConfig.Slot0.kS = 0.1;
+    elevatorConfig.MotionMagic.MotionMagicCruiseVelocity = 45;
+    elevatorConfig.MotionMagic.MotionMagicAcceleration = 110;
+
+    elevatorConfig.Slot0.GravityType = GravityTypeValue.Elevator_Static;
+
+    // Configure motors
+    tryUntilOk(5, () -> master.getConfigurator().apply(elevatorConfig, 0.25));
+    tryUntilOk(5, () -> master.getConfigurator().apply(elevatorConfig, 0.25));
+    tryUntilOk(5, () -> follower.setPosition(0.0));
+    tryUntilOk(5, () -> master.setPosition(0.0));
+
+    masterPosition = master.getPosition();
+    masterVelocity = master.getVelocity();
+    masterAppliedVolts = master.getMotorVoltage();
+    masterSupplyCurrentAmps = master.getSupplyCurrent();
+    masterTorqueCurrentAmps = master.getTorqueCurrent();
+    masterTemp = master.getDeviceTemp();
+
+    followerPosition = follower.getPosition();
+    followerVelocity = follower.getVelocity();
+    followerAppliedVolts = follower.getMotorVoltage();
+    followerSupplyCurrentAmps = follower.getSupplyCurrent();
+    followerTorqueCurrentAmps = follower.getTorqueCurrent();
+    followerTemp = follower.getDeviceTemp();
 
     BaseStatusSignal.setUpdateFrequencyForAll(
-        50.0, position, velocity, appliedVolts, supplyCurrent, temp);
-    torqueCurrent.setUpdateFrequency(250);
-    talon.optimizeBusUtilization();
+        50.0, masterPosition, masterVelocity, masterAppliedVolts, masterSupplyCurrentAmps, masterTorqueCurrentAmps, masterTemp,
+        followerPosition, followerVelocity, followerAppliedVolts, followerSupplyCurrentAmps, followerTorqueCurrentAmps, followerTemp);
+    master.optimizeBusUtilization();
+    follower.optimizeBusUtilization();
 
-    // Register signals for refresh
     PhoenixUtil.registerSignals(
-        false, position, velocity, appliedVolts, torqueCurrent, supplyCurrent, temp);
+        false, masterPosition, masterVelocity, masterAppliedVolts, masterSupplyCurrentAmps, masterTorqueCurrentAmps, masterTemp,
+        followerPosition, followerVelocity, followerAppliedVolts, followerSupplyCurrentAmps, followerTorqueCurrentAmps, followerTemp);
   }
+  
 
   @Override
   public void updateInputs(ElevatorIOInputs inputs) {
-    inputs.data =
-        new ElevatorIOData(
-            BaseStatusSignal.isAllGood(position, velocity, appliedVolts, supplyCurrent, temp),
-            Units.rotationsToRadians(position.getValueAsDouble()),
-            Units.rotationsToRadians(velocity.getValueAsDouble()),
-            appliedVolts.getValueAsDouble(),
-            torqueCurrent.getValueAsDouble(),
-            supplyCurrent.getValueAsDouble(),
-            temp.getValueAsDouble());
-  }
-
-  @Override
-  public void runOpenLoop(double output) {
-    talon.setControl(torqueCurrentRequest.withOutput(output));
+    // Refresh all signals
+    inputs.data = new ElevatorIOData(
+        BaseStatusSignal.isAllGood(masterPosition, masterVelocity, masterAppliedVolts, masterSupplyCurrentAmps, masterTorqueCurrentAmps, masterTemp), 
+        BaseStatusSignal.isAllGood(followerPosition, followerVelocity, followerAppliedVolts, followerSupplyCurrentAmps, followerTorqueCurrentAmps, followerTemp), 
+        masterPosition.getValue().in(Radians), 
+        followerPosition.getValue().in(Radians), 
+        masterVelocity.getValue().in(RadiansPerSecond), 
+        followerVelocity.getValue().in(RadiansPerSecond), 
+        masterAppliedVolts.getValueAsDouble(), 
+        followerAppliedVolts.getValueAsDouble(), 
+        masterTorqueCurrentAmps.getValueAsDouble(), 
+        followerTorqueCurrentAmps.getValueAsDouble(), 
+        masterSupplyCurrentAmps.getValueAsDouble(), 
+        followerSupplyCurrentAmps.getValueAsDouble(), 
+        masterTemp.getValueAsDouble(), 
+        followerTemp.getValueAsDouble());
   }
 
   @Override
   public void runVolts(double volts) {
-    talon.setControl(voltageRequest.withOutput(volts));
+    master.setControl(voltageRequest.withOutput(volts));
+  }
+
+  @Override
+  public void runPosition(double position) {
+    master.setControl(magicRequest.withPosition(position));
   }
 
   @Override
   public void stop() {
-    talon.stopMotor();
+    master.stopMotor();
   }
 
   @Override
-  public void runPosition(double positionRad, double feedforward) {
-    talon.setControl(
-        positionTorqueCurrentRequest
-            .withPosition(Units.radiansToRotations(positionRad))
-            .withFeedForward(feedforward));
+  public void coast() {
+    master.setControl(coastRequest);
   }
-
-  @Override
-  public void setPID(double kP, double kI, double kD) {
-    config.Slot0.kP = kP;
-    config.Slot0.kI = kI;
-    config.Slot0.kD = kD;
-    tryUntilOk(5, () -> talon.getConfigurator().apply(config));
-  }
-
-  @Override
-  public void setBrakeMode(boolean enabled) {
-    new Thread(
-            () -> talon.setNeutralMode(enabled ? NeutralModeValue.Brake : NeutralModeValue.Coast))
-        .start();
-  }
+  
 }

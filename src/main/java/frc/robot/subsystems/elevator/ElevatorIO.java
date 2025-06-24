@@ -7,6 +7,13 @@ public interface ElevatorIO {
  class ElevatorIOInputs {
    public ElevatorIOData data = new ElevatorIOData(
     false,
+    false,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
     0.0,
     0.0, 
     0.0, 
@@ -15,14 +22,21 @@ public interface ElevatorIO {
     0.0
     );
  }
-    record ElevatorIOData(
-        boolean motorConnected,
-        double positionRad,
-        double velocityRadPerSec,
-        double appliedVolts,
-        double torqueCurrentAmps,
-        double supplyCurrentAmps,
-        double tempCelsius
+    record ElevatorIOData (
+        boolean masterConnected,
+        boolean followerConnected,
+        double masterPositionRad,
+        double followerPositionRad,
+        double masterVelocityRadPerSec,
+        double followerVelocityRadPerSec,
+        double masterAppliedVolts,
+        double followerAppliedVolts,
+        double masterTorqueCurrentAmps,
+        double followerTorqueCurrentAmps,
+        double masterSupplyCurrentAmps,
+        double followerSupplyCurrentAmps,
+        double masterTemp,
+        double followerTemp
     ) {}
     
     default void updateInputs(ElevatorIOInputs inputs) {}
@@ -30,12 +44,17 @@ public interface ElevatorIO {
     default void runOpenLoop(double output) {}
   
     default void runVolts(double volts) {}
+
+    default void MotionMagic(double volts) {}
   
     default void stop() {}
-  
-    default void runPosition(double positionRad, double feedforward) {}
+
+    default void runPosition(double positionRad) {}
   
     default void setPID(double kP, double kI, double kD) {}
   
     default void setBrakeMode(boolean enabled) {}
+
+    default void coast() {}
+
 } 
