@@ -2,13 +2,13 @@ package frc.robot.subsystems.elevator;
 
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Robot;
 import frc.robot.util.LoggedTunableNumber;
 import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLogOutput;
+import org.littletonrobotics.junction.Logger;
 
 public class Elevator extends SubsystemBase {
 
@@ -49,6 +49,7 @@ public class Elevator extends SubsystemBase {
       new LoggedTunableNumber("Elevator/Climbing/AutoZeroVoltage");
 
   private final ElevatorIOInputsAutoLogged inputs = new ElevatorIOInputsAutoLogged();
+  private final LockIOInputsAutoLogged lockInputs = new LockIOInputsAutoLogged();
 
   private final Debouncer motorConnectedDebouncer = new Debouncer(0.5, DebounceType.kFalling);
   private final Debouncer followerMotorConnectedDebouncer =
@@ -64,18 +65,36 @@ public class Elevator extends SubsystemBase {
   @AutoLogOutput private boolean brakeModeEnabled = true;
 
   private final ElevatorIO io;
+  private final LockIO lockio;
 
-  public Elevator(ElevatorIO io) {
+  public Elevator(ElevatorIO io, LockIO lock) {
     this.io = io;
+    this.lockio = lock;
   }
 
   public void periodic() {
     io.updateInputs(inputs);
-  }
-  //
-  //  private static final LoggedTunableNumber LimitDIO = new
-  // LoggedTunableNumber("Elevator/Limit/LimitValue");
-  //  private static final LoggedTunableNumber ServoPosition = new
-  // LoggedTunableNumber("Elevator/Servo/Position");
+    lockio.updateInputs(lockInputs);
 
+
+    Logger.processInputs("Elevator", inputs);
+    Logger.processInputs("ElevatorSafeties", lockInputs);
+
+    motorDisconnectedAlert.set(
+        !motorConnectedDebouncer.calculate(inputs.data.masterConnected()) && !Robot.isJITing());
+    followerDisconnectedAlert.set(
+        !followerMotorConnectedDebouncer.calculate(inputs.data.followerConnected())
+            && !Robot.isJITing());
+
+    // Update tunable numbers (configure before builds and during tuning)
+    if (kP.hasChanged(hashCode()) || kD.hasChanged(hashCode())) {
+      io.setPID(kP.get(), 0.0, kD.get());
+    }
+    //
+    //  private static final LoggedTunableNumber LimitDIO = new
+    // LoggedTunableNumber("Elevator/Limit/LimitValue");
+    //  private static final LoggedTunableNumber ServoPosition = new
+    // LoggedTunableNumber("Elevator/Servo/Position");
+
+  }
 }
