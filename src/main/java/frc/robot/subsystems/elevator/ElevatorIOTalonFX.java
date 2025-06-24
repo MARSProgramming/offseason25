@@ -19,40 +19,21 @@ import static frc.robot.util.PhoenixUtil.*;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
-import com.ctre.phoenix6.configs.CANcoderConfiguration;
+import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.CoastOut;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
-import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
-import com.ctre.phoenix6.controls.PositionVoltage;
-import com.ctre.phoenix6.controls.TorqueCurrentFOC;
-import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
-import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
-import com.ctre.phoenix6.hardware.CANcoder;
-import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import com.ctre.phoenix6.signals.SensorDirectionValue;
-import com.ctre.phoenix6.swerve.SwerveModuleConstants;
-import edu.wpi.first.math.filter.Debouncer;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.wpilibj.DigitalInput;
-import edu.wpi.first.wpilibj.Servo;
-import frc.robot.generated.TunerConstants;
-import frc.robot.subsystems.drive.ModuleIO.ModuleIOInputs;
 import frc.robot.util.PhoenixUtil;
-
-import java.util.Queue;
 
 /**
  * Module IO implementation for Talon FX drive motor controller, Talon FX turn motor controller, and
@@ -60,6 +41,8 @@ import java.util.Queue;
  *
  * <p>Device configuration and other behaviors not exposed by TunerConstants can be customized here.
  */
+
+// TODO: later, add sim classes. focus on functionality and think about code structure first.
 public class ElevatorIOTalonFX implements ElevatorIO {
 
   // Hardware objects
@@ -70,7 +53,6 @@ public class ElevatorIOTalonFX implements ElevatorIO {
   private final VoltageOut voltageRequest = new VoltageOut(0);
   private final MotionMagicVoltage magicRequest = new MotionMagicVoltage(0);
   private final CoastOut coastRequest = new CoastOut();
-
 
   // Timestamp inputs from Phoenix thread
   // Inputs to log from elevator motors
@@ -142,35 +124,69 @@ public class ElevatorIOTalonFX implements ElevatorIO {
     followerTemp = follower.getDeviceTemp();
 
     BaseStatusSignal.setUpdateFrequencyForAll(
-        50.0, masterPosition, masterVelocity, masterAppliedVolts, masterSupplyCurrentAmps, masterTorqueCurrentAmps, masterTemp,
-        followerPosition, followerVelocity, followerAppliedVolts, followerSupplyCurrentAmps, followerTorqueCurrentAmps, followerTemp);
+        50.0,
+        masterPosition,
+        masterVelocity,
+        masterAppliedVolts,
+        masterSupplyCurrentAmps,
+        masterTorqueCurrentAmps,
+        masterTemp,
+        followerPosition,
+        followerVelocity,
+        followerAppliedVolts,
+        followerSupplyCurrentAmps,
+        followerTorqueCurrentAmps,
+        followerTemp);
     master.optimizeBusUtilization();
     follower.optimizeBusUtilization();
 
     PhoenixUtil.registerSignals(
-        false, masterPosition, masterVelocity, masterAppliedVolts, masterSupplyCurrentAmps, masterTorqueCurrentAmps, masterTemp,
-        followerPosition, followerVelocity, followerAppliedVolts, followerSupplyCurrentAmps, followerTorqueCurrentAmps, followerTemp);
+        false,
+        masterPosition,
+        masterVelocity,
+        masterAppliedVolts,
+        masterSupplyCurrentAmps,
+        masterTorqueCurrentAmps,
+        masterTemp,
+        followerPosition,
+        followerVelocity,
+        followerAppliedVolts,
+        followerSupplyCurrentAmps,
+        followerTorqueCurrentAmps,
+        followerTemp);
   }
-  
 
   @Override
   public void updateInputs(ElevatorIOInputs inputs) {
     // Refresh all signals
-    inputs.data = new ElevatorIOData(
-        BaseStatusSignal.isAllGood(masterPosition, masterVelocity, masterAppliedVolts, masterSupplyCurrentAmps, masterTorqueCurrentAmps, masterTemp), 
-        BaseStatusSignal.isAllGood(followerPosition, followerVelocity, followerAppliedVolts, followerSupplyCurrentAmps, followerTorqueCurrentAmps, followerTemp), 
-        masterPosition.getValue().in(Radians), 
-        followerPosition.getValue().in(Radians), 
-        masterVelocity.getValue().in(RadiansPerSecond), 
-        followerVelocity.getValue().in(RadiansPerSecond), 
-        masterAppliedVolts.getValueAsDouble(), 
-        followerAppliedVolts.getValueAsDouble(), 
-        masterTorqueCurrentAmps.getValueAsDouble(), 
-        followerTorqueCurrentAmps.getValueAsDouble(), 
-        masterSupplyCurrentAmps.getValueAsDouble(), 
-        followerSupplyCurrentAmps.getValueAsDouble(), 
-        masterTemp.getValueAsDouble(), 
-        followerTemp.getValueAsDouble());
+    inputs.data =
+        new ElevatorIOData(
+            BaseStatusSignal.isAllGood(
+                masterPosition,
+                masterVelocity,
+                masterAppliedVolts,
+                masterSupplyCurrentAmps,
+                masterTorqueCurrentAmps,
+                masterTemp),
+            BaseStatusSignal.isAllGood(
+                followerPosition,
+                followerVelocity,
+                followerAppliedVolts,
+                followerSupplyCurrentAmps,
+                followerTorqueCurrentAmps,
+                followerTemp),
+            masterPosition.getValue().in(Radians),
+            followerPosition.getValue().in(Radians),
+            masterVelocity.getValue().in(RadiansPerSecond),
+            followerVelocity.getValue().in(RadiansPerSecond),
+            masterAppliedVolts.getValueAsDouble(),
+            followerAppliedVolts.getValueAsDouble(),
+            masterTorqueCurrentAmps.getValueAsDouble(),
+            followerTorqueCurrentAmps.getValueAsDouble(),
+            masterSupplyCurrentAmps.getValueAsDouble(),
+            followerSupplyCurrentAmps.getValueAsDouble(),
+            masterTemp.getValueAsDouble(),
+            followerTemp.getValueAsDouble());
   }
 
   @Override
@@ -192,5 +208,31 @@ public class ElevatorIOTalonFX implements ElevatorIO {
   public void coast() {
     master.setControl(coastRequest);
   }
-  
+
+  @Override
+  public void setPID(double kP, double kI, double kD) {
+    tryUntilOk(
+        5,
+        () -> master.getConfigurator().apply(new Slot0Configs().withKP(kP).withKI(kI).withKD(kD)));
+    tryUntilOk(
+        5,
+        () ->
+            follower.getConfigurator().apply(new Slot0Configs().withKP(kP).withKI(kI).withKD(kD)));
+  }
+
+  @Override
+  public void setCharacterization(double kA, double kV, double kS, double kG) {
+    tryUntilOk(
+        5,
+        () ->
+            master
+                .getConfigurator()
+                .apply(new Slot0Configs().withKA(kA).withKV(kV).withKS(kS).withKG(kG)));
+    tryUntilOk(
+        5,
+        () ->
+            follower
+                .getConfigurator()
+                .apply(new Slot0Configs().withKA(kA).withKV(kV).withKS(kS).withKG(kG)));
+  }
 }
