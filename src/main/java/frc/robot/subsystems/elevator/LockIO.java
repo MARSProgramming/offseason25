@@ -18,7 +18,7 @@ public interface LockIO {
       double servoPosition
       ) {}
 
-  default void update(LockIOInputs inputs) {}
+  default void updateInputs(LockIOInputs inputs) {}
 
   default void setServoAngle(double angleDeg) {}
 

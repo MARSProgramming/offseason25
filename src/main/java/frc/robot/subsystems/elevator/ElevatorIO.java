@@ -32,7 +32,7 @@ public interface ElevatorIO {
 
   default void runVolts(double volts) {}
 
-  default void MotionMagic(double volts) {}
+  default void MotionMagic(double position) {}
 
   default void coast() {}
 
@@ -40,7 +40,11 @@ public interface ElevatorIO {
 
   default void runPosition(double positionRad) {}
 
+  default void targetLastPosition() {}
+
   default void setPID(double kP, double kI, double kD) {}
+
+  default void resetPosition() {}
 
   default void setCharacterization(double kA, double kV, double kG, double kS) {}
 

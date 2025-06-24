@@ -23,6 +23,7 @@ import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.CoastOut;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.GravityTypeValue;
@@ -53,6 +54,7 @@ public class ElevatorIOTalonFX implements ElevatorIO {
   private final VoltageOut voltageRequest = new VoltageOut(0);
   private final MotionMagicVoltage magicRequest = new MotionMagicVoltage(0);
   private final CoastOut coastRequest = new CoastOut();
+  private final PositionVoltage positionRequest = new PositionVoltage(0);
 
   // Timestamp inputs from Phoenix thread
   // Inputs to log from elevator motors
@@ -210,6 +212,11 @@ public class ElevatorIOTalonFX implements ElevatorIO {
   }
 
   @Override
+  public void targetLastPosition() {
+    master.setControl(positionRequest.withPosition(master.getPosition().getValueAsDouble()));
+  }
+
+  @Override
   public void setPID(double kP, double kI, double kD) {
     tryUntilOk(
         5,
@@ -234,5 +241,11 @@ public class ElevatorIOTalonFX implements ElevatorIO {
             follower
                 .getConfigurator()
                 .apply(new Slot0Configs().withKA(kA).withKV(kV).withKS(kS).withKG(kG)));
+  }
+
+  @Override
+  public void resetPosition() {
+    tryUntilOk(5, () -> master.setPosition(0.0));
+    tryUntilOk(5, () -> follower.setPosition(0.0));
   }
 }
