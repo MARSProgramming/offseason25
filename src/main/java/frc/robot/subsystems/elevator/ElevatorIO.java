@@ -13,8 +13,8 @@ public interface ElevatorIO {
   record ElevatorIOData(
       boolean masterConnected,
       boolean followerConnected,
-      double masterPositionRad,
-      double followerPositionRad,
+      double masterPosition,
+      double followerPosition,
       double masterVelocityRadPerSec,
       double followerVelocityRadPerSec,
       double masterAppliedVolts,
