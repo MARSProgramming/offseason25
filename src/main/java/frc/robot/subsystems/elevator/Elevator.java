@@ -95,29 +95,21 @@ public class Elevator extends SubsystemBase {
             );
   }
 
-  public Command algaeSetpoint(double setpoint) {
+  public Command positionRelativeAdjustment(double rotations) {
+    double target = inputs.data.masterPosition() + rotations;
     return runEnd(
             () -> {
               lockio.setServo(0);
-              io.runPosition(setpoint);
+              io.runPosition(inputs.data.masterPosition() + rotations);
             },
             () -> {
-              io.stop();
+              io.targetLastPosition();
             })
         .until(
             () ->
                 Helpers.withinTolerance(
-                    inputs.data.masterPosition(), setpoint, 0.05) // add tolerance later
-            )
-        .andThen(
-            runEnd(
-                () -> {
-                  io.runPosition(
-                      inputs.data.masterPosition() + 0.05); // configure based on "bump-up"
-                },
-                () -> {
-                  io.targetLastPosition();
-                }));
+                    inputs.data.masterPosition(), target, 0.05) // add tolerance later
+        );
   }
 
   public Command zeroElevator() {

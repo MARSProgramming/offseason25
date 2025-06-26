@@ -13,6 +13,7 @@
 
 package frc.robot.subsystems.coral;
 
+import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import edu.wpi.first.wpilibj.AnalogInput;
 
@@ -51,6 +52,9 @@ public class CoralIOTalonSRX implements CoralIO {
   @Override
   public void updateInputs(CoralIOInputs inputs) {
     // Refresh all signals
-    inputs.data = new CoralIOData(motor.getMotorOutputPercent(), irSensor.getAverageVoltage(), motor.getStatorCurrent());
+    inputs.data =
+        new CoralIOData(
+            motor.getMotorOutputPercent(), irSensor.getAverageVoltage(), motor.getStatorCurrent());
   }
+
 }
