@@ -7,7 +7,8 @@ import org.littletonrobotics.junction.Logger;
 
 public class Coral extends SubsystemBase {
   // TODO: add default values
-  private static final LoggedTunableNumber IRThresholdCoral = new LoggedTunableNumber("Coral/Threshold");
+  private static final LoggedTunableNumber IRThresholdCoral =
+      new LoggedTunableNumber("Coral/Threshold");
 
   private final CoralIOInputsAutoLogged inputs = new CoralIOInputsAutoLogged();
   private final CoralIO io;
@@ -24,18 +25,23 @@ public class Coral extends SubsystemBase {
       integ++;
     } else {
       integ = 0;
-    } 
+    }
     return integ > 5;
   }
 
-  public Command run(double percentOut) {
-    return runEnd(() -> {
-      io.setOutput(percentOut);
-    }, () -> {
-      io.setOutput(-.25); // default to idle intaking
-    }); 
+  public Command run(double percentOut, boolean passiveActive) {
+    return runEnd(
+        () -> {
+          io.setOutput(percentOut);
+        },
+        () -> {
+          if (passiveActive) {
+            io.setOutput(-.25);
+          } else {
+            io.setOutput(0);
+          }
+        });
   }
-
 
   @Override
   public void periodic() {

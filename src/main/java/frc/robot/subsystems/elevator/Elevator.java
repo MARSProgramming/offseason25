@@ -109,7 +109,7 @@ public class Elevator extends SubsystemBase {
             () ->
                 Helpers.withinTolerance(
                     inputs.data.masterPosition(), target, 0.05) // add tolerance later
-        );
+            );
   }
 
   public Command zeroElevator() {

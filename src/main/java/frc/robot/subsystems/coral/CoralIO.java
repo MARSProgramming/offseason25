@@ -13,5 +13,4 @@ public interface CoralIO {
   default void updateInputs(CoralIOInputs inputs) {}
 
   default void setOutput(double percent) {}
-  
 }

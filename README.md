@@ -26,9 +26,10 @@ cd marvin18-offseason
 ## Task Tracker
 This may be updated accordingly.
 
-- [ ] Create project and install dependencies
-- [ ] Set up AdvantageKit base
-- [ ] Create "skeleton" code subsystems
+- [X] Create project and install dependencies
+- [X] Set up AdvantageKit base
+- [X] Create "skeleton" code subsystems
+- [ ] Add LED implementation
 - [ ] Create and complete separate branches for traditional, command-based control and state-based
 - [ ] Build simulation model
 - [ ] Real-world testing

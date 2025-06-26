@@ -57,4 +57,8 @@ public class CoralIOTalonSRX implements CoralIO {
             motor.getMotorOutputPercent(), irSensor.getAverageVoltage(), motor.getStatorCurrent());
   }
 
+  @Override
+  public void setOutput(double percent) {
+    motor.set(ControlMode.PercentOutput, percent);
+  }
 }
