@@ -29,7 +29,11 @@ This may be updated accordingly.
 - [X] Create project and install dependencies
 - [X] Set up AdvantageKit base
 - [X] Create "skeleton" code subsystems
-- [ ] Add LED implementation
+- [X] Add LED implementation
+- [X] Vision
+- [ ] add alignment implementation
+- [ ] add advanced command management
+- [ ] add single operator capability
 - [ ] Create and complete separate branches for traditional, command-based control and state-based
 - [ ] Build simulation model
 - [ ] Real-world testing
