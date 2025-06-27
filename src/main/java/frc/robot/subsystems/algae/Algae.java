@@ -34,5 +34,5 @@ public class Algae extends SubsystemBase {
     io.updateInputs(inputs);
 
     Logger.processInputs("Algae", inputs);
-    }
+  }
 }

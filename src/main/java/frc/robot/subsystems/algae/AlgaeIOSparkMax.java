@@ -7,16 +7,17 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.SparkBaseConfig;
 import com.revrobotics.spark.config.SparkMaxConfig;
+import frc.robot.Constants;
 
 public class AlgaeIOSparkMax implements AlgaeIO {
-    // TODO: add connection check
+  // TODO: add connection check
   private final SparkBase algaeMotor;
   private final SparkBaseConfig config;
 
   private final int currentLimit = 40;
 
   public AlgaeIOSparkMax() {
-    algaeMotor = new SparkMax(0, MotorType.kBrushless);
+    algaeMotor = new SparkMax(Constants.RobotMap.SPARK.ALGAE, MotorType.kBrushless);
     config = new SparkMaxConfig();
     config.smartCurrentLimit(currentLimit);
     config.signals.busVoltagePeriodMs(20).outputCurrentPeriodMs(20).appliedOutputPeriodMs(20);

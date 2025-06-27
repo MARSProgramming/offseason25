@@ -34,6 +34,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.Voltage;
+import frc.robot.Constants;
 import frc.robot.util.PhoenixUtil;
 
 /**
@@ -73,8 +74,8 @@ public class ElevatorIOTalonFX implements ElevatorIO {
   private final StatusSignal<Temperature> followerTemp;
 
   public ElevatorIOTalonFX() {
-    master = new TalonFX(0);
-    follower = new TalonFX(0);
+    master = new TalonFX(Constants.RobotMap.CAN.ELEVATOR_MASTER);
+    follower = new TalonFX(Constants.RobotMap.CAN.ELEVATOR_FOLLOWER);
 
     var elevatorConfig = new TalonFXConfiguration();
     elevatorConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;

@@ -16,6 +16,7 @@ package frc.robot.subsystems.coral;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import edu.wpi.first.wpilibj.AnalogInput;
+import frc.robot.Constants;
 
 /**
  * Module IO implementation for Talon FX drive motor controller, Talon FX turn motor controller, and
@@ -37,7 +38,7 @@ public class CoralIOTalonSRX implements CoralIO {
   double irVoltage;
 
   public CoralIOTalonSRX() {
-    motor = new TalonSRX(0);
+    motor = new TalonSRX(Constants.RobotMap.CAN.CORAL);
     irSensor = new AnalogInput(0);
 
     // Configure system
