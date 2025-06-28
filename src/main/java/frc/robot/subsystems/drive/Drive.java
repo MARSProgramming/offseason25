@@ -337,6 +337,11 @@ public class Drive extends SubsystemBase {
     poseEstimator.resetPosition(rawGyroRotation, getModulePositions(), pose);
   }
 
+  /** Generates a robot relative calculation for the alignment controller. */
+  public ChassisSpeeds calculateRobotRelative(Pose2d pose) {
+    return Constants.Alignment.AlignmentController.calculate(getPose(), pose, 0, pose.getRotation());
+}
+
   /** Adds a new timestamped vision measurement. */
   public void addVisionMeasurement(
       Pose2d visionRobotPoseMeters,
