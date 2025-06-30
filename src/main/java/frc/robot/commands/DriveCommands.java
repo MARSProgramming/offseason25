@@ -13,8 +13,6 @@
 
 package frc.robot.commands;
 
-import edu.wpi.first.apriltag.AprilTagFieldLayout;
-import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
@@ -30,11 +28,9 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import frc.robot.Constants;
 import frc.robot.subsystems.drive.Drive;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.DoubleSupplier;
@@ -51,13 +47,10 @@ public class DriveCommands {
   private static final double WHEEL_RADIUS_MAX_VELOCITY = 0.25; // Rad/Sec
   private static final double WHEEL_RADIUS_RAMP_RATE = 0.05; // Rad/Sec^2
 
-
-
   private DriveCommands() {}
 
-  
   private static Translation2d getLinearVelocityFromJoysticks(double x, double y) {
-    
+
     // Apply deadband
     double linearMagnitude = MathUtil.applyDeadband(Math.hypot(x, y), DEADBAND);
     Rotation2d linearDirection = new Rotation2d(Math.atan2(y, x));
@@ -71,15 +64,9 @@ public class DriveCommands {
         .getTranslation();
   }
 
-
-
-
-
-
- // public static Pose2d getTransformToTarget(Pose2d target) {
-//
-  //}
-
+  // public static Pose2d getTransformToTarget(Pose2d target) {
+  //
+  // }
 
   /**
    * Field relative drive command using two joysticks (controlling linear and angular velocities).
